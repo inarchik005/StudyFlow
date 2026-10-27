@@ -31,11 +31,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -47,6 +46,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.studyflow.ui.viewmodel.HomeViewModel
 import com.example.studyflow.ui.theme.StudyFlowTheme
 
 data class StudyTask(
@@ -58,7 +60,7 @@ data class StudyTask(
     val priority: String
 )
 
-val studyTasks = listOf(
+private val previewTasks = listOf(
     StudyTask(
         1,
         "Complete Android Development homework",
@@ -151,6 +153,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        android.util.Log.d("MainActivity", "onCreate")
 
         enableEdgeToEdge()
 
@@ -160,21 +163,27 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onStart() { super.onStart(); android.util.Log.d("MainActivity", "onStart") }
+    override fun onResume() { super.onResume(); android.util.Log.d("MainActivity", "onResume") }
+    override fun onPause() { android.util.Log.d("MainActivity", "onPause"); super.onPause() }
+    override fun onStop() { android.util.Log.d("MainActivity", "onStop"); super.onStop() }
+    override fun onDestroy() { android.util.Log.d("MainActivity", "onDestroy"); super.onDestroy() }
 }
 
 @Composable
 fun StudyFlowApp() {
-
     val navController = rememberNavController()
+    val homeViewModel: HomeViewModel = viewModel()
+    val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
 
     NavHost(
         navController = navController,
         startDestination = "home"
     ) {
-
         composable("home") {
-            HomeScreen(
-                tasks = studyTasks,
+            HomeRoute(
+                viewModel = homeViewModel,
                 onTaskClick = { taskId ->
                     navController.navigate("details/$taskId")
                 },
@@ -192,16 +201,14 @@ fun StudyFlowApp() {
                 }
             )
         ) { backStackEntry ->
-
-            val taskId =
-                backStackEntry.arguments?.getInt("taskId") ?: 1
-
-            val task =
-                studyTasks.firstOrNull { it.id == taskId }
+            val taskId = backStackEntry.arguments?.getInt("taskId") ?: 1
+            val task = uiState.tasks.firstOrNull { it.id == taskId }
 
             if (task != null) {
                 DetailScreen(
                     task = task,
+                    isFavorite = task.id in uiState.favoriteTaskIds,
+                    onFavoriteClick = { homeViewModel.onFavouriteClick(task.id) },
                     onBackClick = {
                         navController.popBackStack()
                     }
@@ -219,35 +226,38 @@ fun StudyFlowApp() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(
-    tasks: List<StudyTask>,
+fun HomeRoute(
+    viewModel: HomeViewModel,
     onTaskClick: (Int) -> Unit,
     onProfileClick: () -> Unit
 ) {
-
-    var selectedCategory by remember {
-        mutableStateOf("All")
-    }
-
-    val categories = listOf(
-        "All",
-        "Math",
-        "Programming",
-        "Android",
-        "University",
-        "AI"
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    HomeScreen(
+        uiState = uiState,
+        onSearchChange = viewModel::onSearchChange,
+        onCategorySelected = viewModel::onCategorySelected,
+        onFavouriteClick = viewModel::onFavouriteClick,
+        onRetry = viewModel::onRetry,
+        onSimulateError = viewModel::onSimulateError,
+        onTaskClick = onTaskClick,
+        onProfileClick = onProfileClick
     )
+}
 
-    val filteredTasks =
-        if (selectedCategory == "All") {
-            tasks
-        } else {
-            tasks.filter {
-                it.subject == selectedCategory
-            }
-        }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(
+    uiState: com.example.studyflow.ui.HomeUiState,
+    onSearchChange: (String) -> Unit,
+    onCategorySelected: (String) -> Unit,
+    onFavouriteClick: (Int) -> Unit,
+    onRetry: () -> Unit,
+    onSimulateError: () -> Unit,
+    onTaskClick: (Int) -> Unit,
+    onProfileClick: () -> Unit
+) {
 
     Scaffold(
         topBar = {
@@ -259,6 +269,7 @@ fun HomeScreen(
                     )
                 },
                 actions = {
+                    TextButton(onClick = onSimulateError) { Text("Test error") }
                     IconButton(
                         onClick = onProfileClick
                     ) {
@@ -279,9 +290,15 @@ fun HomeScreen(
                 .padding(horizontal = Spacing.Medium)
         ) {
 
-            SectionHeader(
-                title = "Categories"
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = onSearchChange,
+                label = { Text("Search tasks") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
+
+            SectionHeader(title = "Categories")
 
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(
@@ -289,13 +306,13 @@ fun HomeScreen(
                 )
             ) {
 
-                items(categories) { category ->
+                items(uiState.categories) { category ->
 
                     CategoryChip(
                         category = category,
-                        selected = selectedCategory == category,
+                        selected = uiState.selectedCategory == category,
                         onClick = {
-                            selectedCategory = category
+                            onCategorySelected(category)
                         }
                     )
                 }
@@ -305,11 +322,11 @@ fun HomeScreen(
                 title = "Your tasks"
             )
 
-            if (filteredTasks.isEmpty()) {
-
-                EmptyState()
-
-            } else {
+            when {
+                uiState.isLoading -> LoadingState()
+                uiState.error != null -> ErrorState(uiState.error, onRetry)
+                uiState.visibleTasks.isEmpty() -> EmptyState()
+                else -> {
 
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(
@@ -318,7 +335,7 @@ fun HomeScreen(
                 ) {
 
                     items(
-                        items = filteredTasks,
+                        items = uiState.visibleTasks,
                         key = { it.id }
                     ) { task ->
 
@@ -326,9 +343,12 @@ fun HomeScreen(
                             task = task,
                             onClick = {
                                 onTaskClick(task.id)
-                            }
+                            },
+                            isFavorite = task.id in uiState.favoriteTaskIds,
+                            onFavoriteClick = { onFavouriteClick(task.id) }
                         )
                     }
+                }
                 }
             }
         }
@@ -339,12 +359,10 @@ fun HomeScreen(
 @Composable
 fun DetailScreen(
     task: StudyTask,
+    isFavorite: Boolean,
+    onFavoriteClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
-
-    var isFavorite by remember {
-        mutableStateOf(false)
-    }
 
     Scaffold(
         topBar = {
@@ -416,9 +434,7 @@ fun DetailScreen(
             )
 
             Button(
-                onClick = {
-                    isFavorite = !isFavorite
-                },
+                onClick = onFavoriteClick,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -508,7 +524,9 @@ fun ProfileScreen(
 @Composable
 fun TaskCard(
     task: StudyTask,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {}
 ) {
 
     Card(
@@ -548,6 +566,9 @@ fun TaskCard(
                 text = "Due: ${task.deadline}",
                 style = MaterialTheme.typography.bodyMedium
             )
+            TextButton(onClick = onFavoriteClick) {
+                Text(if (isFavorite) "★ Favorite" else "☆ Add favorite")
+            }
         }
     }
 }
@@ -655,6 +676,25 @@ fun EmptyState() {
     }
 }
 
+@Composable
+fun LoadingState() {
+    Box(Modifier.fillMaxWidth().padding(Spacing.Large), contentAlignment = Alignment.Center) {
+        Text("Loading tasks…", style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+fun ErrorState(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(Spacing.Large),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+    ) {
+        Text("Could not load tasks: $message", style = MaterialTheme.typography.bodyLarge)
+        Button(onClick = onRetry) { Text("Retry") }
+    }
+}
+
 @Preview(
     showBackground = true
 )
@@ -663,7 +703,12 @@ fun HomeScreenPreview() {
 
     StudyFlowTheme {
         HomeScreen(
-            tasks = studyTasks,
+            uiState = com.example.studyflow.ui.HomeUiState(tasks = previewTasks, visibleTasks = previewTasks),
+            onSearchChange = {},
+            onCategorySelected = {},
+            onFavouriteClick = {},
+            onRetry = {},
+            onSimulateError = {},
             onTaskClick = {},
             onProfileClick = {}
         )
@@ -678,8 +723,46 @@ fun DetailScreenPreview() {
 
     StudyFlowTheme {
         DetailScreen(
-            task = studyTasks.first(),
+            task = previewTasks.first(),
+            isFavorite = false,
+            onFavoriteClick = {},
             onBackClick = {}
+        )
+    }
+}
+
+@Preview(name = "Loading", showBackground = true)
+@Composable
+fun HomeLoadingPreview() {
+    StudyFlowTheme {
+        HomeScreen(
+            uiState = com.example.studyflow.ui.HomeUiState(isLoading = true),
+            onSearchChange = {}, onCategorySelected = {}, onFavouriteClick = {},
+            onRetry = {}, onSimulateError = {}, onTaskClick = {}, onProfileClick = {}
+        )
+    }
+}
+
+@Preview(name = "Empty", showBackground = true)
+@Composable
+fun HomeEmptyPreview() {
+    StudyFlowTheme {
+        HomeScreen(
+            uiState = com.example.studyflow.ui.HomeUiState(),
+            onSearchChange = {}, onCategorySelected = {}, onFavouriteClick = {},
+            onRetry = {}, onSimulateError = {}, onTaskClick = {}, onProfileClick = {}
+        )
+    }
+}
+
+@Preview(name = "Error", showBackground = true)
+@Composable
+fun HomeErrorPreview() {
+    StudyFlowTheme {
+        HomeScreen(
+            uiState = com.example.studyflow.ui.HomeUiState(error = "Failed to load tasks"),
+            onSearchChange = {}, onCategorySelected = {}, onFavouriteClick = {},
+            onRetry = {}, onSimulateError = {}, onTaskClick = {}, onProfileClick = {}
         )
     }
 }
@@ -706,7 +789,12 @@ fun HomeScreenDarkPreview() {
 
     StudyFlowTheme {
         HomeScreen(
-            tasks = studyTasks,
+            uiState = com.example.studyflow.ui.HomeUiState(tasks = previewTasks, visibleTasks = previewTasks),
+            onSearchChange = {},
+            onCategorySelected = {},
+            onFavouriteClick = {},
+            onRetry = {},
+            onSimulateError = {},
             onTaskClick = {},
             onProfileClick = {}
         )

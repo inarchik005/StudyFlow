@@ -97,6 +97,56 @@ From the command line instead:
 - Room (local database) — planned for the next stage
 - Gradle Kotlin DSL
 
+## SIS 4 — MVVM architecture
+
+```mermaid
+flowchart TD
+    User[User events: search, category, favorite, retry] --> HomeScreen[HomeScreen in MainActivity.kt]
+    HomeScreen --> HomeRoute[HomeRoute in MainActivity.kt]
+    HomeRoute --> HomeViewModel[HomeViewModel]
+    HomeViewModel -->|getTasks / delay / simulated error| TaskRepository[TaskRepository]
+    TaskRepository -->|tasks or error| HomeViewModel
+    HomeViewModel -->|StateFlow<HomeUiState>| HomeRoute
+    HomeRoute -->|collectAsStateWithLifecycle| HomeScreen
+```
+
+`HomeUiState` (in `ui/HomeUiState.kt`) carries the repository tasks, the
+ViewModel-filtered visible tasks, search text, selected category, favourite IDs,
+loading state, and an optional error. `HomeScreen` only renders that state and
+emits callbacks; searching and category filtering happen in `HomeViewModel`.
+`TaskRepository` owns the sample data and adds a server-like delay. Its
+`shouldFail` parameter simulates a failed load.
+
+### Trace one click: selecting a category
+
+`CategoryChip` in `MainActivity.kt` calls `HomeScreen`'s
+`onCategorySelected(category)` callback. `HomeRoute` connects that callback to
+`HomeViewModel.onCategorySelected`. The ViewModel copies `HomeUiState` with the
+new `selectedCategory` and recomputes `visibleTasks`; `StateFlow` emits the new
+state, `HomeRoute` collects it with `collectAsStateWithLifecycle()`, and
+`HomeScreen` renders the matching task cards.
+
+### Rotation proof
+
+I typed `Kotlin` in search and marked the matching task as a favourite, then
+rotated the emulator. The old Activity paused, stopped, and was destroyed; a
+new Activity started and resumed for the new orientation. `HomeViewModel.init`
+appeared only once, and the search text and favourite were still visible after
+rotation, showing that this UI state stayed in the ViewModel.
+
+```text
+10-27 18:34:32.326 D MainActivity: onCreate
+10-27 18:34:32.379 D MainActivity: onStart
+10-27 18:34:32.400 D MainActivity: onResume
+10-27 18:34:32.634 D HomeViewModel: init
+10-27 18:35:01.870 D MainActivity: onPause
+10-27 18:35:01.916 D MainActivity: onStop
+10-27 18:35:01.926 D MainActivity: onDestroy
+10-27 18:35:01.940 D MainActivity: onCreate
+10-27 18:35:01.945 D MainActivity: onStart
+10-27 18:35:01.945 D MainActivity: onResume
+```
+
 ## Author
 
 Inara — Information Systems student, Android Development course, SIS1.

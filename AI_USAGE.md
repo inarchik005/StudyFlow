@@ -25,9 +25,15 @@ This helped me structure the UI and organize the Compose components.
 
 ## Example of an AI mistake
 
-One issue happened when AI-generated code used the `study_flow_icon` resource before the resource was correctly available in the project. Android Studio showed an unresolved reference error.
+One incorrect-layer example was filtering tasks inside `HomeScreen`. That made
+the screen responsible for business logic and harder to preview consistently.
+I moved the search and category filtering to `HomeViewModel.withVisibleTasks()`;
+the composable now receives `HomeUiState.visibleTasks` and only displays it.
 
-I fixed this myself by creating the required `study_flow_icon.xml` file inside the `res/drawable` directory and then rebuilding the project.
+Another issue happened when AI-generated code used the `study_flow_icon`
+resource before the resource was correctly available in the project. Android
+Studio showed an unresolved reference error. I fixed it by creating
+`study_flow_icon.xml` inside `res/drawable` and rebuilding the project.
 
 After that, the project built successfully and the application ran correctly on the Android emulator.
 
