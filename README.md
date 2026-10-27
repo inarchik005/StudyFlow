@@ -42,6 +42,7 @@ StudyFlow/
     ├── build.gradle.kts
     └── src/main/java/com/example/studyflow/
         ├── MainActivity.kt                 # routes and stateless screens
+        ├── data/StudyTask.kt                # task model
         ├── data/TaskRepository.kt           # sample data, delay, simulated error
         ├── ui/HomeUiState.kt                # immutable screen state
         ├── ui/viewmodel/HomeViewModel.kt    # state and user actions

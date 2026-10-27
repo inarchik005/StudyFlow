@@ -50,15 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.studyflow.ui.viewmodel.HomeViewModel
 import com.example.studyflow.ui.theme.StudyFlowTheme
-
-data class StudyTask(
-    val id: Int,
-    val title: String,
-    val subject: String,
-    val deadline: String,
-    val description: String,
-    val priority: String
-)
+import com.example.studyflow.data.StudyTask
 
 private val previewTasks = listOf(
     StudyTask(

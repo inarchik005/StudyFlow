@@ -1,6 +1,6 @@
 package com.example.studyflow.ui
 
-import com.example.studyflow.StudyTask
+import com.example.studyflow.data.StudyTask
 
 data class HomeUiState(
     // tasks is the complete repository result; visibleTasks is prepared by the ViewModel.
