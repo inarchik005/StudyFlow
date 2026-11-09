@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "title": "Complete Android Development homework",
+    "subject": "Android",
+    "due_date": "Nov 10",
+    "description": "Connect the app to the API with Retrofit and prepare the SIS5 defense.",
+    "priority": "High"
+  },
+  {
+    "id": 2,
+    "title": "Review Kotlin coroutines",
+    "subject": "Programming",
+    "due_date": "Nov 11",
+    "description": "Review suspend functions, viewModelScope and try/catch with coroutines.",
+    "priority": "Medium"
+  },
+  {
+    "id": 3,
+    "title": "Prepare Deep Learning assignment",
+    "subject": "AI",
+    "due_date": "Nov 12",
+    "description": "Complete the required exercises and check the final notebook.",
+    "priority": "High"
+  },
+  {
+    "id": 4,
+    "title": "Study Chinese vocabulary",
+    "subject": "Languages",
+    "due_date": "Nov 13",
+    "description": "Learn the new vocabulary and practice pronunciation.",
+    "priority": "Low"
+  },
+  {
+    "id": 5,
+    "title": "Complete Statistics exercises",
+    "subject": "Math",
+    "due_date": "Nov 14",
+    "description": "Solve the assigned statistical problems and check the answers.",
+    "priority": "Medium"
+  },
+  {
+    "id": 6,
+    "title": "Review Cybersecurity lecture",
+    "subject": "Cybersecurity",
+    "due_date": "Nov 15",
+    "description": "Review the lecture notes and write down important concepts.",
+    "priority": "Medium"
+  },
+  {
+    "id": 7,
+    "title": "Work on Information Systems project",
+    "subject": "University",
+    "due_date": "Nov 16",
+    "description": "Update the project documentation and prepare the presentation.",
+    "priority": "High"
+  },
+  {
+    "id": 8,
+    "title": "Prepare presentation slides",
+    "subject": "University",
+    "due_date": "Nov 17",
+    "description": "Create slides and organize the main points for the presentation.",
+    "priority": "Medium"
+  },
+  {
+    "id": 9,
+    "title": "Practice Git commands",
+    "subject": "Programming",
+    "due_date": "Nov 18",
+    "description": "Practice commits, branches, merging and pushing changes to GitHub.",
+    "priority": "Low"
+  },
+  {
+    "id": 10,
+    "title": "Review Operating Systems",
+    "subject": "University",
+    "due_date": "Nov 19",
+    "description": "Review processes, memory management and file system concepts.",
+    "priority": "Medium"
+  },
+  {
+    "id": 11,
+    "title": "Write Linear Algebra summary",
+    "subject": "Math",
+    "due_date": "Nov 20",
+    "description": "Summarize matrices, determinants and eigenvalues on one page.",
+    "priority": "Low"
+  },
+  {
+    "id": 12,
+    "title": "Build a small neural network",
+    "subject": "AI",
+    "due_date": "Nov 21",
+    "description": "Train a simple model on MNIST and report the accuracy.",
+    "priority": "Medium"
+  }
+]

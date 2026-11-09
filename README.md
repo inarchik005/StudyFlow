@@ -78,6 +78,7 @@ From the command line instead:
 
 - Kotlin
 - Jetpack Compose (Empty Activity template)
+- Retrofit + Gson — loads tasks from a remote JSON API (SIS 5)
 - Room (local database) — planned for the next stage
 - Gradle Kotlin DSL
 
@@ -130,6 +131,49 @@ rotation, showing that this UI state stayed in the ViewModel.
 10-27 18:35:01.945 D MainActivity: onStart
 10-27 18:35:01.945 D MainActivity: onResume
 ```
+
+## SIS 5 — Clean architecture + network (Retrofit)
+
+Tasks are no longer hardcoded: the app downloads them from
+`https://raw.githubusercontent.com/inarchik005/StudyFlow/main/api/tasks.json`
+(the file `api/tasks.json` in this repository, served as a REST endpoint by GitHub).
+
+```
+app/src/main/java/com/example/studyflow/
+├── domain/
+│   ├── model/StudyTask.kt              # app model (no Android, no Retrofit)
+│   └── repository/TaskRepository.kt    # interface: suspend fun getTasks(): List<StudyTask>
+├── data/
+│   ├── remote/TaskDto.kt               # shape of one JSON object
+│   ├── remote/TaskApi.kt               # Retrofit interface, @GET("api/tasks.json")
+│   ├── remote/RetrofitInstance.kt      # Retrofit with BASE_URL + Gson converter
+│   └── repository/TaskRepositoryImpl.kt# calls the API, maps TaskDto -> StudyTask
+└── presentation/
+    ├── HomeUiState.kt                  # TasksState: Loading / Success(tasks) / Error(message)
+    ├── HomeViewModel.kt                # viewModelScope.launch + try/catch
+    └── HomeScreen.kt                   # when (state): spinner / list / error + Retry
+```
+
+```mermaid
+flowchart LR
+    Screen[HomeScreen] -->|onRetry| VM[HomeViewModel]
+    VM -->|getTasks| Repo[TaskRepository interface]
+    Impl[TaskRepositoryImpl] -.implements.-> Repo
+    Impl -->|GET api/tasks.json| Api[TaskApi / Retrofit]
+    Api -->|List of TaskDto| Impl
+    Impl -->|List of StudyTask| VM
+    VM -->|StateFlow HomeUiState| Screen
+```
+
+**Flow:** `HomeViewModel.init` calls `loadTasks()`. The state becomes `Loading`
+(spinner). Inside `viewModelScope.launch` and `try`, `repository.getTasks()` runs
+the HTTP request; `TaskRepositoryImpl` turns each `TaskDto` into `StudyTask`, and the
+ViewModel sets `Success(tasks)`. If the request fails (no internet → `IOException`),
+`catch` sets `Error(message)` and the screen shows the message and a **Retry** button.
+
+**Test:** with internet the list of 12 tasks appears. With Airplane mode on, pressing
+Retry shows "No internet connection…" and the app does not crash. `INTERNET`
+permission is declared in `AndroidManifest.xml`.
 
 ## Author
 

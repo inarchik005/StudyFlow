@@ -54,4 +54,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation("androidx.navigation:navigation-compose:2.10.2")
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
 }

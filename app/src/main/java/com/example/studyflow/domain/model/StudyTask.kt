@@ -1,5 +1,7 @@
-package com.example.studyflow.data
+package com.example.studyflow.domain.model
 
+// The app's own model. Screens and the ViewModel only work with this class,
+// never with the API class (TaskDto).
 data class StudyTask(
     val id: Int,
     val title: String,
